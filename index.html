@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<title>Juego de Damas - Evaluación Final - Jose Suero</title>
+	<link href="js/jquery-ui.css" rel="stylesheet">
+	<link href="css/juegodedamas.css" rel="stylesheet">
+	<script type="text/javascript" src="js/external/jquery/jquery.js" ></script>
+	<script type="text/javascript" src="js/jquery-ui.js" ></script>
+	<script type="text/javascript" src="js/widgetdamas.js" ></script>
+	<script type="text/javascript">
+		$(document).ready(
+			function () {
+				$("#tablero2").juegodedamas();
+				$("#tablero").juegodedamas();
+			}
+		);
+	</script>
+</head>
+<body>
+	<div id="tablero"></div>
+	
+	<div id="tablero2"></div>
+</body>
+</html>

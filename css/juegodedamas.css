@@ -1,0 +1,20 @@
+.tablero {
+	background-color: #336699;
+	width: 960px;
+	height: 960px;
+}
+.tablero .row {
+	position: absolute;
+	height: 120px;
+}
+.tablero .cell {
+	position: absolute;
+	width: 120px;
+	height: 120px;
+}
+.tablero .cell.light {
+	background-color: #FFFFFF;
+}
+.tablero .cell.dark {
+	background-color: #000000;
+}
