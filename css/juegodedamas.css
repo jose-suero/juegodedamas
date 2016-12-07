@@ -2,13 +2,15 @@
 	background-color: #336699;
 	width: 960px;
 	height: 960px;
+	border: 1px solid black;
+	margin: 3px;
 }
 .tablero .row {
-	position: absolute;
+	position: relative;
 	height: 120px;
 }
 .tablero .cell {
-	position: absolute;
+	position: relative;
 	width: 120px;
 	height: 120px;
 }
