@@ -1,9 +1,11 @@
 $.widget("custom.juegodedamas", {
-		
+	version: "0.0.1",
+	//opciones por defecto.	
 	options: {
 		"player1": { name: "Jugador 1" },
 		"player2": { name: "Jugador 2" },
-		"size": 960		
+		"size": 960,
+		"droppableClass" : false
 	},
 	
 	//Constructor
@@ -21,6 +23,7 @@ $.widget("custom.juegodedamas", {
 		});
 	},
 	
+	//Inicializador
 	_init() {
 		//Para lograr referenciar a este widget dentro de funciones que redefinen la palaba clave this
 		var thisWidget = this;
@@ -36,6 +39,9 @@ $.widget("custom.juegodedamas", {
 				  celda = celdas[i] = $("<DIV>")
 					.prop({
 						"id": "celda" + i})
+					.data({
+					    "boardRow": Math.floor(i/8),
+					    "boardCol": (i - Math.floor(i/8) * 8)})
 					.css({
 						"backgroundColor": color,
 						"width": cellsize + "px",
@@ -44,12 +50,14 @@ $.widget("custom.juegodedamas", {
 						"float": "left"})
 					.data({
 						"tipo": (light ? "blanca" : "negra"),
-						"ocupada": false,
-						"tablero": this
+						"ocupada": false
 					});
 				
 			if (!light) {
-				celda.droppable({drop: thisWidget._drop});
+				celda.droppable({
+					drop: thisWidget._drop,
+					accept: thisWidget._accept,
+					activeClass: thisWidget.options.droppableClass });
 			}
 			
 			this.MainDiv.append(celda);
@@ -81,7 +89,7 @@ $.widget("custom.juegodedamas", {
 				of: celda
 			});
 			
-			thisWidget._setCellOcupada(celda);
+			thisWidget._setCellOcupada(celda, true, pieza);
 			pieza.data("whereiam", celda);
 		});
 	},
@@ -96,14 +104,23 @@ $.widget("custom.juegodedamas", {
 		});
 	},
 	
-	_setCellOcupada: function (celda, ocupada) {
+	_setCellOcupada: function (celda, ocupada, pieza) {
 		var thisWidget = $(celda).closest(".ui-juegodedamas").data("customJuegodedamas");
 		
 		if (ocupada === undefined) ocupada = true;
 		var elem = $(celda);
 		elem.data("ocupada", ocupada);
-		if (ocupada) elem.droppable("instance").destroy();
-		else elem.droppable({drop: thisWidget._drop});
+		if (pieza !== undefined) { elem.data("pieza", pieza); }
+		else { elem.removeData("pieza"); }
+
+		if (ocupada) { 
+			elem.droppable("instance").destroy(); 
+		} else { 
+			elem.droppable({
+				drop: thisWidget._drop,
+				accept: thisWidget._accept,
+				activeClass: thisWidget.options.droppableClass });
+		}
 	},
 		
 	_drop: function(event, ui) {
@@ -113,15 +130,23 @@ $.widget("custom.juegodedamas", {
 			of: this
 		});
 		
-		var thisWidget = $(this).closest(".ui-juegodedamas").data("customJuegodedamas");
+		var cellAfter = $(this);
+		var thisWidget = cellAfter.closest(".ui-juegodedamas").data("customJuegodedamas");
+		var cellBefore = ui.draggable.data("whereiam");
 		
-		if (ui.draggable.data("whereiam")) {
-			thisWidget._setCellOcupada(ui.draggable.data("whereiam"), false);
+		if (cellBefore) {
+			thisWidget._setCellOcupada(cellBefore, false);
 		}
 		
-		
-		thisWidget._setCellOcupada(this);		
+		thisWidget._setCellOcupada(this, true, ui.draggable);		
 		ui.draggable.data("whereiam", this);
 	},
+
+	_accept: function(draggable) {
+		//aquí se puede implementar la decisión de objetos draggable que 
+		// pueden dejarse caer en cada celda. por el momento la dejo 
+		// que todas queden disponibles.
+		return true;
+	}
 	
 });
