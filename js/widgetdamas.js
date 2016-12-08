@@ -5,29 +5,31 @@ $.widget("custom.juegodedamas", {
 		"player1": { name: "Jugador 1" },
 		"player2": { name: "Jugador 2" },
 		"size": 960,
-		"droppableClass" : false
+		"droppableClass" : false,
+		"cellBorder": 1
 	},
 	
 	//Constructor
 	_create: function () {	
 		
 		this.element.addClass("ui-juegodedamas");
-		this.element.append(this.MainDiv = $("<DIV>").prop({"id": "tablaMain"}));
+		this.element.append(this.MainDiv = $("<DIV>")
+			.prop({"id": "tablaMain"})
+			.css({
+				"overflow": "auto",
+				"width": this.options.size + "px",
+				"height": this.options.size + "px",
+				"border": "1px solid black"})
+		);
+		//this.element.append(this.ObjsDiv = $("<DIV>").prop({"id": "tablaObjs"}));
 		this.element.append(this.ObjsDiv = $("<DIV>").prop({"id": "tablaObjs"}));
-		
-		this.MainDiv.css({
-			"overflow": "auto",
-			"width": this.options.size + "px",
-			"height": this.options.size + "px",
-			"border": "1px solid black"
-		});
 	},
 	
 	//Inicializador
 	_init() {
-		//Para lograr referenciar a este widget dentro de funciones que redefinen la palaba clave this
+		//Para lograr referenciar a este widget dentro de funciones que le dan otro sentido a la palabra clave "this"
 		var thisWidget = this;
-		var cellsize = this.options.size / 8;	
+		var cellsize = (this.options.size / 8) - (2*this.options.cellBorder);	
 
 		//todo: destruir las celdas e imagenes para construirlas nuevamente.
 		
@@ -47,7 +49,8 @@ $.widget("custom.juegodedamas", {
 						"width": cellsize + "px",
 						"height": cellsize + "px",
 						"position": "relative",
-						"float": "left"})
+						"float": "left",
+						"border": this.options.cellBorder + "px solid " + color})
 					.data({
 						"tipo": (light ? "blanca" : "negra"),
 						"ocupada": false
@@ -73,7 +76,9 @@ $.widget("custom.juegodedamas", {
 					"width": parseInt(cellsize * .8) + "px",
 					"height": parseInt(cellsize * .8) + "px"})
 				.draggable({revert: "invalid"})
-				.data({"tipo":(i<12)?"azul":"roja"}));
+				.data({
+					"tipo": (i<12)?"azul":"roja",
+					"coronada": false }));
 		}
 		
 		//Llevar las piezas a su lugar inicial.
@@ -138,15 +143,59 @@ $.widget("custom.juegodedamas", {
 			thisWidget._setCellOcupada(cellBefore, false);
 		}
 		
-		thisWidget._setCellOcupada(this, true, ui.draggable);		
-		ui.draggable.data("whereiam", this);
+		thisWidget._setCellOcupada(cellAfter, true, ui.draggable);		
+		ui.draggable.data("whereiam", cellAfter);		
 	},
 
 	_accept: function(draggable) {
-		//aquí se puede implementar la decisión de objetos draggable que 
-		// pueden dejarse caer en cada celda. por el momento la dejo 
-		// que todas queden disponibles.
-		return true;
+		//Permitir el movimiento solamente a recuadros que si pueden utilizarse.
+		//Piezas sin coronar:
+		//1. Movimiento hacia delante en la próxima fila
+		var pieza = {
+			mySelf: $(draggable),
+		};
+		pieza.data = pieza.mySelf.data()	;
+		pieza.whereiam = pieza.data.whereiam;
+		pieza.boardRow = pieza.whereiam.data("boardRow");
+		pieza.boardCol = pieza.whereiam.data("boardCol");
+		
+		var $this = {
+			mySelf: $(this)
+		}; //droppable object
+		$this.data = $this.mySelf.data();
+		$this.myRow = $this.data.boardRow;
+		$this.myCol = $this.data.boardCol;
+		var thisWidget = pieza.mySelf.closest(".ui-juegodedamas").data("customJuegodedamas");
+		var direction = (pieza.data.tipo == "azul") ? 1 : -1;
+		
+		//solamente se permite un movimiento de 1 o 2 filas arriba y abajo en el mismo número de columnas izquierda o derecha
+		//  si es de 2 filas, se debe considerar que la celda del medio esté ocupada por una pieza del otro jugador.
+		var filas = ($this.myRow-pieza.boardRow) * direction;
+		var columnas = Math.abs(pieza.boardCol - $this.myCol);
+		
+		if (filas <= 2 && filas == columnas) {
+			if (filas == 2) {
+				var coordsBetween = {
+					row: pieza.boardRow  + (direction * (pieza.boardRow < $this.myRow) ? 1 : -1),
+					col: pieza.boardCol + (direction * (pieza.boardCol > $this.boardCol) ? 1 : -1)
+				};
+				var cellBetween = $(thisWidget.celdas).filter(function (i, e) {
+					return e.data("boardRow") == coordsBetween.row
+					      && e.data("boardCol") == coordsBetween.col;
+				})[0];
+				
+				if (cellBetween && cellBetween.data("ocupada") && cellBetween.data("pieza").data("tipo") != pieza.data.tipo) {
+					console.log("Captura");
+					return true;
+				} else {
+					return false;
+				}
+			} else {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 	
 });
