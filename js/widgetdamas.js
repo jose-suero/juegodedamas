@@ -32,13 +32,13 @@ $.widget("custom.juegodedamas", {
 		//todo: modificar esta función para que se pueda reinicializar el tablero.
 		
 		//Crear los 64 objetos que tendrán las celdas y sus referencias.
-		var celdas = this.celdas = [];
+		var cells = this.cells = [];
 		for (var i = 0; i < 8; i++) {
-			this.celdas[i] = [];
+			this.cells[i] = [];
 			for (var j = 0; j < 8; j++) {
 				var light = j % 2 == i % 2,
 				    color = (light) ? "#FFFFFF" : "#000000",
-					celda = celdas[i][j] = $("<DIV>")
+					cell = cells[i][j] = $("<DIV>")
 						.data({
 						    "boardRow": i,
 						    "boardCol": j })
@@ -55,20 +55,20 @@ $.widget("custom.juegodedamas", {
 						});
 					
 				if (!light) {
-					celda.droppable({
+					cell.droppable({
 						drop: boardUtils.checkerDropped,
 						accept: boardUtils.canAcceptDraggable,
 						activeClass: thisWidget.options.droppableClass });
 				}
 				
-				this.MainDiv.append(celda);
+				this.MainDiv.append(cell);
 			}
 		}
 		
-		//Crear las 24 piezas
-		var piezas = this.piezas = [];
+		//Crear las 24 piezas y posicionarlas en su lugar
+		var checkers = this.checkers = [];
 		for (var i = 0; i < 24; i++) {
-			thisWidget.ObjsDiv.append(this.piezas[i] = $("<IMG>")
+			var checker = $("<IMG>")
 				.prop({"src": (i < 12) ? "img/blue.svg" : "img/red.svg"})
 				.css({
 					"width": parseInt(cellsize * .8) + "px",
@@ -76,33 +76,24 @@ $.widget("custom.juegodedamas", {
 				.draggable({revert: "invalid"})
 				.data({
 					"type": (i<12)?"azul":"roja",
-					"isKing": false }));
+					"isKing": false });
+			this.checkers.push(checker);
+			thisWidget.ObjsDiv.append(checker);
+			
+			var desde = (checker.data("type") == "azul") ? 0 : 5,
+			      cell = boardUtils.getBlackDivs(desde,desde+3,false,thisWidget)[0];
+			
+			boardUtils.insertCheckerIntoCell(checker, cell);
 		}
-		
-		//Llevar las piezas a su lugar inicial.
-		$(piezas).each( function (i,pieza) {
-			var type = pieza.data("type");
-			var desde = (type == "azul") ? 0 : 5;
-			var negras =  boardUtils.getBlackDivs(desde,desde+3,false,thisWidget);
-			var celda = negras[0];
-			
-			pieza.position({
-				my: "center",
-				at: "center",
-				of: celda
-			});
-			
-			boardUtils.setCellOcupied(celda, true, pieza);
-		});
 	},
 	
 });
 
-//utilidades y objetos
+//utilerías generales.
 var boardUtils = {
 	getCheckerInfo: function (checker) {
 		return {
-			coord: new coord(
+			coord: new Coord(
 						checker.data("whereiam").data("boardRow"), 
 						checker.data("whereiam").data("boardCol")
 					),
@@ -111,21 +102,21 @@ var boardUtils = {
 		};
 	},
 
-	setCellOcupied: function (celda, ocupied, pieza) {
-		var thisWidget = $(celda).closest(".ui-checkersGame").data("customJuegodedamas");
+	setCellOcupied: function (celda, ocupied, checker) {
+		var thisWidget = boardUtils.getWidget($(celda));
 		var elem = $(celda);
 
 		if (ocupied) { 
 			ocupied = true;
 			elem.droppable("instance").destroy();
-			pieza.data("whereiam", elem);
-			elem.data("pieza", pieza);
+			checker.data("whereiam", elem);
+			elem.data("checker", checker);
 		} else { 
 			elem.droppable({
 				drop: boardUtils.checkerDropped,
 				accept: boardUtils.canAcceptDraggable,
 				activeClass: thisWidget.options.droppableClass });
-			elem.removeData("pieza");
+			elem.removeData("checker");
 		}
 		
 		elem.data("ocupied", ocupied);
@@ -136,7 +127,7 @@ var boardUtils = {
 		tRow = (tRow) ? tRow : widget.celdas.length - 1;
 		var result;
 		for (var i = fRow; i < tRow; i++) {
-			var found = $.grep(widget.celdas[i], function(e, index){
+			var found = $.grep(widget.cells[i], function(e, index){
 				var pRet = ($(e).data("type")=="negra");
 				return ocupied !== undefined ? pRet && e.data("ocupied") == ocupied: pRet;
 			});
@@ -158,6 +149,22 @@ var boardUtils = {
 		
 		var cellAfter = $(this);
 		var cellBefore = ui.draggable.data("whereiam");
+		
+		if (Math.abs(cellAfter.data("boardRow") - cellBefore.data("boardRow")) == 2) {
+			//La pieza se ha movido dos filas, verificar posible captura.
+			var cellBetween = boardUtils.getCellBetween(cellAfter, cellBefore);
+			if (cellBetween) {
+				var checkerData = boardUtils.getCheckerInfo(cellBetween.data("checker"));
+				if (checkerData.type != ui.draggable.data("type")) {
+					//captura producida. Remover esa pieza.
+					cellBetween.data("checker").position({
+						my: "top",
+						at: "top",
+						of: document });
+					boardUtils.setCellOcupied(cellBetween, false);
+				}
+			}
+		}
 
 		boardUtils.setCellOcupied(cellBefore, false);
 		boardUtils.setCellOcupied(cellAfter, true, ui.draggable);
@@ -175,10 +182,44 @@ var boardUtils = {
 
 
 		return true;		
+	},
+	
+	insertCheckerIntoCell: function(checker, cell) {
+		checker.position({
+				my: "center",
+				at: "center",
+				of: cell
+			});
+			
+			boardUtils.setCellOcupied(cell, true, checker);
+	},
+	
+	getCellBetween: function (cell1, cell2) {
+		cell1Coord = Coord.getCoordFromCell(cell1);
+		cell2Coord = Coord.getCoordFromCell(cell2);
+		
+		if (Math.abs(cell1Coord.row - cell2Coord.row) == 2 && 
+		    Math.abs(cell1Coord.col - cell2Coord.col) == 2) {
+			
+			var coord = new Coord((cell1Coord.row + cell2Coord.row) / 2, (cell1Coord.col + cell2Coord.col) / 2);
+			var thisWidget = boardUtils.getWidget(cell1);
+			return thisWidget.cells[coord.row][coord.col];						
+			
+		}
+		
+		return null;
+	},
+	
+	getWidget(boardObj) {
+		return boardObj.closest(".ui-checkersGame").data("customJuegodedamas");
 	}
 };
 //coordenada del tablero
-function coord(row, col) {
+function Coord(row, col) {
 	this.row = row;
 	this.col = col;
-}
+};
+
+Coord.getCoordFromCell = function (cell) {
+	return new Coord(cell.data("boardRow"), cell.data("boardCol"));
+};
