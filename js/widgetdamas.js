@@ -5,24 +5,22 @@ $.widget("custom.juegodedamas", {
 		"player1": { name: "Jugador 1" },
 		"player2": { name: "Jugador 2" },
 		"size": 960,
-		"droppableClass" : false,
+		"droppableClass": false,
 		"cellBorder": 1
 	},
 	
 	//Constructor
-	_create: function () {	
-		
-		this.element.addClass("ui-juegodedamas");
+	_create: function () {
+		this.element.addClass("ui-checkersGame");
 		this.element.append(this.MainDiv = $("<DIV>")
-			.prop({"id": "tablaMain"})
+			.prop({"id": "boardTable"})
 			.css({
 				"overflow": "auto",
 				"width": this.options.size + "px",
 				"height": this.options.size + "px",
 				"border": "1px solid black"})
 		);
-		//this.element.append(this.ObjsDiv = $("<DIV>").prop({"id": "tablaObjs"}));
-		this.element.append(this.ObjsDiv = $("<DIV>").prop({"id": "tablaObjs"}));
+		this.element.append(this.ObjsDiv = $("<DIV>").prop({"id": "boardObjs"}));
 	},
 	
 	//Inicializador
@@ -31,61 +29,61 @@ $.widget("custom.juegodedamas", {
 		var thisWidget = this;
 		var cellsize = (this.options.size / 8) - (2*this.options.cellBorder);	
 
-		//todo: destruir las celdas e imagenes para construirlas nuevamente.
+		//todo: modificar esta función para que se pueda reinicializar el tablero.
 		
 		//Crear los 64 objetos que tendrán las celdas y sus referencias.
 		var celdas = this.celdas = [];
-		for (var i = 0; i < 8*8; i++) {
-			var light  = ((i % 2) == (parseInt(i / 8) % 2)),
-			      color = (light) ? "#FFFFFF" : "#000000",
-				  celda = celdas[i] = $("<DIV>")
-					.prop({
-						"id": "celda" + i})
-					.data({
-					    "boardRow": Math.floor(i/8),
-					    "boardCol": (i - Math.floor(i/8) * 8)})
-					.css({
-						"backgroundColor": color,
-						"width": cellsize + "px",
-						"height": cellsize + "px",
-						"position": "relative",
-						"float": "left",
-						"border": this.options.cellBorder + "px solid " + color})
-					.data({
-						"tipo": (light ? "blanca" : "negra"),
-						"ocupada": false
-					});
+		for (var i = 0; i < 8; i++) {
+			this.celdas[i] = [];
+			for (var j = 0; j < 8; j++) {
+				var light = j % 2 == i % 2,
+				    color = (light) ? "#FFFFFF" : "#000000",
+					celda = celdas[i][j] = $("<DIV>")
+						.data({
+						    "boardRow": i,
+						    "boardCol": j })
+						.css({
+							"backgroundColor": color,
+							"width": cellsize + "px",
+							"height": cellsize + "px",
+							"position": "relative",
+							"float": "left",
+							"border": this.options.cellBorder + "px solid " + color})
+						.data({
+							"type": (light ? "blanca" : "negra"),
+							"ocupied": false
+						});
+					
+				if (!light) {
+					celda.droppable({
+						drop: boardUtils.checkerDropped,
+						accept: boardUtils.canAcceptDraggable,
+						activeClass: thisWidget.options.droppableClass });
+				}
 				
-			if (!light) {
-				celda.droppable({
-					drop: thisWidget._drop,
-					accept: thisWidget._accept,
-					activeClass: thisWidget.options.droppableClass });
+				this.MainDiv.append(celda);
 			}
-			
-			this.MainDiv.append(celda);
 		}
 		
 		//Crear las 24 piezas
 		var piezas = this.piezas = [];
 		for (var i = 0; i < 24; i++) {
-			thisWidget.ObjsDiv.append(this.piezas[i] =
-				$("<IMG>")
+			thisWidget.ObjsDiv.append(this.piezas[i] = $("<IMG>")
 				.prop({"src": (i < 12) ? "img/blue.svg" : "img/red.svg"})
 				.css({
 					"width": parseInt(cellsize * .8) + "px",
 					"height": parseInt(cellsize * .8) + "px"})
 				.draggable({revert: "invalid"})
 				.data({
-					"tipo": (i<12)?"azul":"roja",
-					"coronada": false }));
+					"type": (i<12)?"azul":"roja",
+					"isKing": false }));
 		}
 		
 		//Llevar las piezas a su lugar inicial.
 		$(piezas).each( function (i,pieza) {
-			var tipo = pieza.data("tipo");
-			var desde = (tipo == "azul") ? 0 : 40;
-			var negras =  thisWidget._getBlackDivs(desde,desde+23,false);
+			var type = pieza.data("type");
+			var desde = (type == "azul") ? 0 : 5;
+			var negras =  boardUtils.getBlackDivs(desde,desde+3,false,thisWidget);
 			var celda = negras[0];
 			
 			pieza.position({
@@ -94,41 +92,64 @@ $.widget("custom.juegodedamas", {
 				of: celda
 			});
 			
-			thisWidget._setCellOcupada(celda, true, pieza);
-			pieza.data("whereiam", celda);
+			boardUtils.setCellOcupied(celda, true, pieza);
 		});
 	},
 	
-	_getBlackDivs: function (fRow, tRow, ocupada) {
-		fRow = (fRow) ? fRow : 0;
-		tRow = (tRow) ? tRow : this.celdas.length - 1;
-		
-		return $.grep(this.celdas, function (e,i) {
-			var pRet = (e.data("tipo")=="negra" && fRow <= i && i <= tRow);
-			return ocupada !== undefined ? pRet && e.data("ocupada") == ocupada: pRet;
-		});
-	},
-	
-	_setCellOcupada: function (celda, ocupada, pieza) {
-		var thisWidget = $(celda).closest(".ui-juegodedamas").data("customJuegodedamas");
-		
-		if (ocupada === undefined) ocupada = true;
-		var elem = $(celda);
-		elem.data("ocupada", ocupada);
-		if (pieza !== undefined) { elem.data("pieza", pieza); }
-		else { elem.removeData("pieza"); }
+});
 
-		if (ocupada) { 
-			elem.droppable("instance").destroy(); 
+//utilidades y objetos
+var boardUtils = {
+	getCheckerInfo: function (checker) {
+		return {
+			coord: new coord(
+						checker.data("whereiam").data("boardRow"), 
+						checker.data("whereiam").data("boardCol")
+					),
+			type: checker.data("type"),
+			isKing: checker.data("isKing")
+		};
+	},
+
+	setCellOcupied: function (celda, ocupied, pieza) {
+		var thisWidget = $(celda).closest(".ui-checkersGame").data("customJuegodedamas");
+		var elem = $(celda);
+
+		if (ocupied) { 
+			ocupied = true;
+			elem.droppable("instance").destroy();
+			pieza.data("whereiam", elem);
+			elem.data("pieza", pieza);
 		} else { 
 			elem.droppable({
-				drop: thisWidget._drop,
-				accept: thisWidget._accept,
+				drop: boardUtils.checkerDropped,
+				accept: boardUtils.canAcceptDraggable,
 				activeClass: thisWidget.options.droppableClass });
+			elem.removeData("pieza");
 		}
+		
+		elem.data("ocupied", ocupied);
+	},
+	
+	getBlackDivs: function (fRow, tRow, ocupied, widget) {
+		fRow = (fRow) ? fRow : 0;
+		tRow = (tRow) ? tRow : widget.celdas.length - 1;
+		var result;
+		for (var i = fRow; i < tRow; i++) {
+			var found = $.grep(widget.celdas[i], function(e, index){
+				var pRet = ($(e).data("type")=="negra");
+				return ocupied !== undefined ? pRet && e.data("ocupied") == ocupied: pRet;
+			});
+
+			if (result == undefined) result = found;
+			else found.forEach(function (item, index) {
+				result.push(item);
+			});
+		}
+		return result;
 	},
 		
-	_drop: function(event, ui) {
+	checkerDropped: function(event, ui) {
 		ui.draggable.position({
 			my: "center",
 			at: "center",
@@ -136,66 +157,28 @@ $.widget("custom.juegodedamas", {
 		});
 		
 		var cellAfter = $(this);
-		var thisWidget = cellAfter.closest(".ui-juegodedamas").data("customJuegodedamas");
 		var cellBefore = ui.draggable.data("whereiam");
-		
-		if (cellBefore) {
-			thisWidget._setCellOcupada(cellBefore, false);
-		}
-		
-		thisWidget._setCellOcupada(cellAfter, true, ui.draggable);		
-		ui.draggable.data("whereiam", cellAfter);		
+
+		boardUtils.setCellOcupied(cellBefore, false);
+		boardUtils.setCellOcupied(cellAfter, true, ui.draggable);
 	},
 
-	_accept: function(draggable) {
+	canAcceptDraggable: function(draggable) {
 		//Permitir el movimiento solamente a recuadros que si pueden utilizarse.
 		//Piezas sin coronar:
 		//1. Movimiento hacia delante en la próxima fila
-		var pieza = {
-			mySelf: $(draggable),
-		};
-		pieza.data = pieza.mySelf.data()	;
-		pieza.whereiam = pieza.data.whereiam;
-		pieza.boardRow = pieza.whereiam.data("boardRow");
-		pieza.boardCol = pieza.whereiam.data("boardCol");
-		
-		var $this = {
-			mySelf: $(this)
-		}; //droppable object
-		$this.data = $this.mySelf.data();
-		$this.myRow = $this.data.boardRow;
-		$this.myCol = $this.data.boardCol;
-		var thisWidget = pieza.mySelf.closest(".ui-juegodedamas").data("customJuegodedamas");
-		var direction = (pieza.data.tipo == "azul") ? 1 : -1;
-		
-		//solamente se permite un movimiento de 1 o 2 filas arriba y abajo en el mismo número de columnas izquierda o derecha
-		//  si es de 2 filas, se debe considerar que la celda del medio esté ocupada por una pieza del otro jugador.
-		var filas = ($this.myRow-pieza.boardRow) * direction;
-		var columnas = Math.abs(pieza.boardCol - $this.myCol);
-		
-		if (filas <= 2 && filas == columnas) {
-			if (filas == 2) {
-				var coordsBetween = {
-					row: pieza.boardRow  + (direction * (pieza.boardRow < $this.myRow) ? 1 : -1),
-					col: pieza.boardCol + (direction * (pieza.boardCol > $this.boardCol) ? 1 : -1)
-				};
-				var cellBetween = $(thisWidget.celdas).filter(function (i, e) {
-					return e.data("boardRow") == coordsBetween.row
-					      && e.data("boardCol") == coordsBetween.col;
-				})[0];
-				
-				if (cellBetween && cellBetween.data("ocupada") && cellBetween.data("pieza").data("tipo") != pieza.data.tipo) {
-					console.log("Captura");
-					return true;
-				} else {
-					return false;
-				}
-			} else {
-				return true;
-			}
-		}
-		
-		return false;
+		var checker = boardUtils.getCheckerInfo(draggable);
+		//la dirección a donde puede moverse será:
+		//Si está coronada hacia cualquier dirección (direction = 0), 
+		// sino está coronada y es azul hacia abajo (direction = 1) sino hacia arriba (direction = -1)
+		var direction = checker.isKing ? 0 : checker.type === "azul" ? 1 : -1;
+
+
+		return true;		
 	}
-	
-});
+};
+//coordenada del tablero
+function coord(row, col) {
+	this.row = row;
+	this.col = col;
+}
