@@ -15,12 +15,14 @@ $.widget("custom.juegodedamas", {
 		this.element.append(this.MainDiv = $("<DIV>")
 			.prop({"id": "boardTable"})
 			.css({
-				"overflow": "auto",
+				//"overflow": "auto",
 				"width": this.options.size + "px",
 				"height": this.options.size + "px",
 				"border": "1px solid black"})
 		);
-		this.element.append(this.ObjsDiv = $("<DIV>").prop({"id": "boardObjs"}));
+		this.element.append(this.ObjsDiv = $("<DIV>"));//.prop({"id": "boardObjs"}));
+		this.element.append(this.InfoDiv = $("<DIV>"));//.prop({"id": "informD"}));
+		this.element.append(this.CapturedDiv = $("<DIV>"));//.prop({"id": "capturedCheckers"}));
 	},
 	
 	//Inicializador
@@ -73,7 +75,9 @@ $.widget("custom.juegodedamas", {
 				.css({
 					"width": parseInt(cellsize * .8) + "px",
 					"height": parseInt(cellsize * .8) + "px"})
-				.draggable({revert: "invalid"})
+				.draggable({
+					"revert": "invalid",
+					"start": boardUtils.startDrag})
 				.data({
 					"type": (i<12)?"azul":"roja",
 					"isKing": false });
@@ -92,6 +96,7 @@ $.widget("custom.juegodedamas", {
 //utilerías generales.
 var boardUtils = {
 	getCheckerInfo: function (checker) {
+		if (checker === undefined) { return null; };
 		return {
 			coord: new Coord(
 						checker.data("whereiam").data("boardRow"), 
@@ -107,7 +112,6 @@ var boardUtils = {
 		var elem = $(celda);
 
 		if (ocupied) { 
-			ocupied = true;
 			elem.droppable("instance").destroy();
 			checker.data("whereiam", elem);
 			elem.data("checker", checker);
@@ -141,33 +145,27 @@ var boardUtils = {
 	},
 		
 	checkerDropped: function(event, ui) {
-		ui.draggable.position({
-			my: "center",
-			at: "center",
-			of: this
-		});
 		
 		var cellAfter = $(this);
 		var cellBefore = ui.draggable.data("whereiam");
 		
+		boardUtils.insertCheckerIntoCell(ui.draggable, this);
+		ui.draggable.css({"z-index": "auto"});
+
 		if (Math.abs(cellAfter.data("boardRow") - cellBefore.data("boardRow")) == 2) {
 			//La pieza se ha movido dos filas, verificar posible captura.
 			var cellBetween = boardUtils.getCellBetween(cellAfter, cellBefore);
 			if (cellBetween) {
 				var checkerData = boardUtils.getCheckerInfo(cellBetween.data("checker"));
-				if (checkerData.type != ui.draggable.data("type")) {
+				if (checkerData && checkerData.type != ui.draggable.data("type")) {
 					//captura producida. Remover esa pieza.
-					cellBetween.data("checker").position({
-						my: "top",
-						at: "top",
-						of: document });
+					cellBetween.data("checker").appendTo(boardUtils.getWidget(cellBetween).CapturedDiv);
 					boardUtils.setCellOcupied(cellBetween, false);
 				}
 			}
 		}
 
 		boardUtils.setCellOcupied(cellBefore, false);
-		boardUtils.setCellOcupied(cellAfter, true, ui.draggable);
 	},
 
 	canAcceptDraggable: function(draggable) {
@@ -185,13 +183,15 @@ var boardUtils = {
 	},
 	
 	insertCheckerIntoCell: function(checker, cell) {
+		checker.appendTo(cell);
+
 		checker.position({
 				my: "center",
 				at: "center",
 				of: cell
-			});
+		});
 			
-			boardUtils.setCellOcupied(cell, true, checker);
+		boardUtils.setCellOcupied(cell, true, checker);
 	},
 	
 	getCellBetween: function (cell1, cell2) {
@@ -210,9 +210,15 @@ var boardUtils = {
 		return null;
 	},
 	
-	getWidget(boardObj) {
-		return boardObj.closest(".ui-checkersGame").data("customJuegodedamas");
+	getWidget: function (boardObj) {
+		return $(boardObj).closest(".ui-checkersGame").data("customJuegodedamas");
+	},
+
+	startDrag: function(event, ui) {
+		ui.helper.css("z-index", "99");
+
 	}
+
 };
 //coordenada del tablero
 function Coord(row, col) {
