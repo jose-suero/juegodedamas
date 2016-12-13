@@ -56,6 +56,7 @@ var boardUtils = {
 		
 		var cellAfter = $(this);
 		var cellBefore = ui.draggable.data("whereiam");
+		var checkerType = ui.draggable.data("type");
 		
 		boardUtils.insertCheckerIntoCell(ui.draggable, this);
 		ui.draggable.css({"z-index": "auto"});
@@ -65,11 +66,21 @@ var boardUtils = {
 			//La pieza se ha movido dos filas, verificar posible captura.
 			var cellBetween = boardUtils.getCellBetween(cellAfter, cellBefore);
 			if (cellBetween) {
-				var checkerData = boardUtils.getCheckerInfo(cellBetween.data("checker"));
-				if (checkerData && checkerData.type != ui.draggable.data("type")) {
+				var checkerBetweenData = boardUtils.getCheckerInfo(cellBetween.data("checker"));
+				if (checkerBetweenData && checkerBetweenData.type != checkerType) {
 					//captura producida. Remover esa pieza.
-					cellBetween.data("checker").appendTo(boardUtils.getWidget(cellBetween).CapturedDiv);
+					var checkerBetween = cellBetween.data("checker");
+					checkerBetween.removeData("whereiam")
+					checkerBetween.appendTo(boardUtils.getWidget(cellBetween).CapturedDiv);
 					boardUtils.setCellOcupied(cellBetween, false);
+
+					//verificar si el jugador ganó.
+					var piezasContrarias = $.grep(boardUtils.getWidget(cellBetween).checkers, function(checker, index){
+						return (checker.data("whereiam") && checker.data("type") != checkerType);
+					});
+					if (piezasContrarias.length == 0) {
+						alert(checkerType + " Ganó");
+					}
 				}
 			}
 		}
