@@ -20,9 +20,9 @@ $.widget("custom.juegodedamas", {
 				"height": this.options.size + "px",
 				"border": "1px solid black"})
 		);
-		this.element.append(this.ObjsDiv = $("<DIV>"));//.prop({"id": "boardObjs"}));
-		this.element.append(this.InfoDiv = $("<DIV>"));//.prop({"id": "informD"}));
-		this.element.append(this.CapturedDiv = $("<DIV>"));//.prop({"id": "capturedCheckers"}));
+		this.element.append(this.ObjsDiv = $("<DIV>"));
+		this.element.append(this.InfoDiv = $("<DIV>"));
+		this.element.append(this.CapturedDiv = $("<DIV>"));
 	},
 	
 	//Inicializador
@@ -89,143 +89,11 @@ $.widget("custom.juegodedamas", {
 			
 			boardUtils.insertCheckerIntoCell(checker, cell);
 		}
+		
+		thisWidget.CurrentPlayer = 'azul';		
+		thisWidget.InfoDiv.empty().append($("<P>").text("Juega " + (thisWidget.CurrentPlayer == "azul" ? 
+				thisWidget.options.player1.name :
+				thisWidget.options.player2.name)));
 	},
 	
 });
-
-//utilerías generales.
-var boardUtils = {
-	getCheckerInfo: function (checker) {
-		if (checker === undefined) { return null; };
-		return {
-			coord: new Coord(
-						checker.data("whereiam").data("boardRow"), 
-						checker.data("whereiam").data("boardCol")
-					),
-			type: checker.data("type"),
-			isKing: checker.data("isKing")
-		};
-	},
-
-	setCellOcupied: function (celda, ocupied, checker) {
-		var thisWidget = boardUtils.getWidget($(celda));
-		var elem = $(celda);
-
-		if (ocupied) { 
-			elem.droppable("instance").destroy();
-			checker.data("whereiam", elem);
-			elem.data("checker", checker);
-		} else { 
-			elem.droppable({
-				drop: boardUtils.checkerDropped,
-				accept: boardUtils.canAcceptDraggable,
-				activeClass: thisWidget.options.droppableClass });
-			elem.removeData("checker");
-		}
-		
-		elem.data("ocupied", ocupied);
-	},
-	
-	getBlackDivs: function (fRow, tRow, ocupied, widget) {
-		fRow = (fRow) ? fRow : 0;
-		tRow = (tRow) ? tRow : widget.celdas.length - 1;
-		var result;
-		for (var i = fRow; i < tRow; i++) {
-			var found = $.grep(widget.cells[i], function(e, index){
-				var pRet = ($(e).data("type")=="negra");
-				return ocupied !== undefined ? pRet && e.data("ocupied") == ocupied: pRet;
-			});
-
-			if (result == undefined) result = found;
-			else found.forEach(function (item, index) {
-				result.push(item);
-			});
-		}
-		return result;
-	},
-		
-	checkerDropped: function(event, ui) {
-		
-		var cellAfter = $(this);
-		var cellBefore = ui.draggable.data("whereiam");
-		
-		boardUtils.insertCheckerIntoCell(ui.draggable, this);
-		ui.draggable.css({"z-index": "auto"});
-
-		if (Math.abs(cellAfter.data("boardRow") - cellBefore.data("boardRow")) == 2) {
-			//La pieza se ha movido dos filas, verificar posible captura.
-			var cellBetween = boardUtils.getCellBetween(cellAfter, cellBefore);
-			if (cellBetween) {
-				var checkerData = boardUtils.getCheckerInfo(cellBetween.data("checker"));
-				if (checkerData && checkerData.type != ui.draggable.data("type")) {
-					//captura producida. Remover esa pieza.
-					cellBetween.data("checker").appendTo(boardUtils.getWidget(cellBetween).CapturedDiv);
-					boardUtils.setCellOcupied(cellBetween, false);
-				}
-			}
-		}
-
-		boardUtils.setCellOcupied(cellBefore, false);
-	},
-
-	canAcceptDraggable: function(draggable) {
-		//Permitir el movimiento solamente a recuadros que si pueden utilizarse.
-		//Piezas sin coronar:
-		//1. Movimiento hacia delante en la próxima fila
-		var checker = boardUtils.getCheckerInfo(draggable);
-		//la dirección a donde puede moverse será:
-		//Si está coronada hacia cualquier dirección (direction = 0), 
-		// sino está coronada y es azul hacia abajo (direction = 1) sino hacia arriba (direction = -1)
-		var direction = checker.isKing ? 0 : checker.type === "azul" ? 1 : -1;
-
-
-		return true;		
-	},
-	
-	insertCheckerIntoCell: function(checker, cell) {
-		checker.appendTo(cell);
-
-		checker.position({
-				my: "center",
-				at: "center",
-				of: cell
-		});
-			
-		boardUtils.setCellOcupied(cell, true, checker);
-	},
-	
-	getCellBetween: function (cell1, cell2) {
-		cell1Coord = Coord.getCoordFromCell(cell1);
-		cell2Coord = Coord.getCoordFromCell(cell2);
-		
-		if (Math.abs(cell1Coord.row - cell2Coord.row) == 2 && 
-		    Math.abs(cell1Coord.col - cell2Coord.col) == 2) {
-			
-			var coord = new Coord((cell1Coord.row + cell2Coord.row) / 2, (cell1Coord.col + cell2Coord.col) / 2);
-			var thisWidget = boardUtils.getWidget(cell1);
-			return thisWidget.cells[coord.row][coord.col];						
-			
-		}
-		
-		return null;
-	},
-	
-	getWidget: function (boardObj) {
-		return $(boardObj).closest(".ui-checkersGame").data("customJuegodedamas");
-	},
-
-	startDrag: function(event, ui) {
-		ui.helper.css("z-index", "99");
-
-	}
-
-};
-//coordenada del tablero
-function Coord(row, col) {
-	this.row = row;
-	this.col = col;
-};
-
-Coord.getCoordFromCell = function (cell) {
-	return new Coord(cell.data("boardRow"), cell.data("boardCol"));
-};
