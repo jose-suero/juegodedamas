@@ -29,7 +29,6 @@
     ##### Opciones
     * **size:** Especifica el tamaño con el que se generará el tablero del juego. Si no se envía este asumirá un valor por defecto de 960 píxeles.
     * **droppableClass:** Especifica la clase css a aplicar a las celdas del tablero cuando una pieza está encima de ella.
-    [player1]:()
     * **player1:** Opciones para el primer jugador del tablero
       * _**name:** especifique el nombre del jugador. Por defecto "Jugador 1"_
     * **player2:** Lo mismo que para `player1` con valor para ``.name`` por defecto de "Jugador 2"
