@@ -9,20 +9,32 @@ $.widget("custom.juegodedamas", {
 		"cellBorder": 1
 	},
 	
+	_myInternalKeys: {
+		"darkCells" : "dark",
+		"lightCells" : "light",
+		"player1key" : "dark",
+		"player2key" : "light"
+	},
+	
 	//Constructor
 	_create: function () {
 		this.element.addClass("ui-checkersGame");
+		this.element.append(this.Player1div = $("<DIV>"));
 		this.element.append(this.MainDiv = $("<DIV>")
-			.prop({"id": "boardTable"})
+			//.prop({"id": "boardTable"})
 			.css({
 				//"overflow": "auto",
 				"width": this.options.size + "px",
 				"height": this.options.size + "px",
 				"border": "1px solid black"})
 		);
-		this.element.append(this.ObjsDiv = $("<DIV>"));
+		this.element.append(this.Player2div = $("<DIV>"));
 		this.element.append(this.InfoDiv = $("<DIV>"));
+		this.element.append(this.ObjsDiv = $("<DIV>"));
 		this.element.append(this.CapturedDiv = $("<DIV>"));
+		
+		this.Player1div.append($("<P>").text(this.options.player1.name), this.Player1divcaptures = $("<DIV>"));
+		this.Player2div.append($("<P>").text(this.options.player2.name), this.Player2divcaptures = $("<DIV>"));
 	},
 	
 	//Inicializador
@@ -53,7 +65,7 @@ $.widget("custom.juegodedamas", {
 							"float": "left",
 							"border": this.options.cellBorder + "px solid " + color})
 						.data({
-							"type": (light ? "blanca" : "negra"),
+							"type": (light ? thisWidget._myInternalKeys.lightCells : thisWidget._myInternalKeys.darkCells),
 							"ocupied": false
 						});
 					
@@ -79,21 +91,22 @@ $.widget("custom.juegodedamas", {
 				.draggable({
 					"revert": "invalid",
 					"start": boardUtils.startDrag,
-				    "stop": boardUtils.stopDrag})
+				    "stop": boardUtils.stopDrag,
+					"zIndex": 100 })
 				.data({
-					"type": (i<12)?"azul":"roja",
+					"type": (i<12)? thisWidget._myInternalKeys.player1key : thisWidget._myInternalKeys.player2key,
 					"isKing": false });
 			this.checkers.push(checker);
 			thisWidget.ObjsDiv.append(checker);
 			
-			var desde = (checker.data("type") == "azul") ? 0 : 5,
+			var desde = (checker.data("type") == thisWidget._myInternalKeys.player1key) ? 0 : 5,
 			      cell = boardUtils.getBlackDivs(desde,desde+3,false,thisWidget)[0];
 			
 			boardUtils.insertCheckerIntoCell(checker, cell);
 		}
 		
-		thisWidget.CurrentPlayer = 'azul';		
-		thisWidget.InfoDiv.empty().append($("<P>").text("Juega " + (thisWidget.CurrentPlayer == "azul" ? 
+		thisWidget.CurrentPlayer = thisWidget._myInternalKeys.player1key;		
+		thisWidget.InfoDiv.empty().append($("<P>").text("Juega " + (thisWidget.CurrentPlayer == thisWidget._myInternalKeys.player1key ? 
 				thisWidget.options.player1.name :
 				thisWidget.options.player2.name)));
 	},

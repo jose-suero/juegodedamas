@@ -7,10 +7,7 @@ var boardUtils = {
 	    var whereiam = checker.data("whereiam");
 
 		return {
-			coord: (whereiam) ? new Coord(
-						checker.data("whereiam").data("boardRow"), 
-						checker.data("whereiam").data("boardCol")
-					) : null,
+			coord: (whereiam) ? new Coord(whereiam.data("boardRow"), whereiam.data("boardCol")) : null,
 			type: checker.data("type"),
 			isKing: checker.data("isKing"),
 			whereiam: checker.data("whereiam")
@@ -42,7 +39,7 @@ var boardUtils = {
 		var result;
 		for (var i = fRow; i < tRow; i++) {
 			var found = $.grep(widget.cells[i], function(e, index){
-				var pRet = ($(e).data("type")=="negra");
+				var pRet = ($(e).data("type") == widget._myInternalKeys.darkCells);
 				return ocupied !== undefined ? pRet && e.data("ocupied") == ocupied: pRet;
 			});
 
@@ -57,10 +54,11 @@ var boardUtils = {
 	checkerDropped: function(event, ui) {
 
         var cellAfter=$(this),
-            cellBefore=ui.draggable.data("whereiam"),
-            checkerType=ui.draggable.data("type"),
+            canContinueCapturing = false,
+			ci = boardUtils.getCheckerInfo(ui.draggable),
+            cellBefore= ci.whereiam,
             thisWidget = boardUtils.getWidget(cellBefore),
-            canContinueCapturing = false;
+            checkerType=ci.type;
 
 		boardUtils.insertCheckerIntoCell(ui.draggable, this);
 
@@ -74,7 +72,7 @@ var boardUtils = {
 					//captura producida. Remover esa pieza.
 					var checkerBetween = cellBetween.data("checker");
 					checkerBetween.removeData("whereiam")
-					checkerBetween.appendTo(thisWidget.CapturedDiv);
+					checkerBetween.appendTo(ci.type == thisWidget._myInternalKeys.player1key ? thisWidget.Player1divcaptures : thisWidget.Player2divcaptures);
 					boardUtils.setCellOcupied(cellBetween, false);
 
 					//verificar si el jugador ganó.
@@ -82,7 +80,7 @@ var boardUtils = {
 						return (checker.data("whereiam") && checker.data("type") != checkerType);
 					});
 					if (piezasContrarias.length == 0) {
-						alert(checkerType + " Ganó");
+						alert((checkerType == thisWidget._myInternalKeys.player1key ? thisWidget.options.player1.name : thisWidget.options.player2.name) + " Ganó");
 					}
 
 					//Si continúa teniendo capturas posibles con esta misma pieza se le permite seguir jugando.
@@ -94,21 +92,21 @@ var boardUtils = {
 		}
 		
 		//2. Revisar si hay una coronación.
-		if (cellAfter.data("boardRow") == (ui.draggable.data("type") == "azul" ? 7 : 0) && (!ui.draggable.data("isKing"))) {
+		if (cellAfter.data("boardRow") == (ci.type == thisWidget._myInternalKeys.player1key ? 7 : 0) && (!ci.isKing)) {
 			//Coronación
 			ui.draggable.data("isKing", true);
-			ui.draggable.attr({ "src" : ui.draggable.data("type") == "azul" ? "img/bluec.svg" : "img/redc.svg"  });
+			ui.draggable.attr({ "src" : ui.draggable.data("type") == thisWidget._myInternalKeys.player1key ? "img/bluec.svg" : "img/redc.svg"  });
 		}
 
 		boardUtils.setCellOcupied(cellBefore, false);
 		if (!canContinueCapturing) {
-		    thisWidget.CurrentPlayer = ui.draggable.data("type") == "azul" ? "roja" : "azul";
+		    thisWidget.CurrentPlayer = ci.type == thisWidget._myInternalKeys.player1key ? thisWidget._myInternalKeys.player2key : thisWidget._myInternalKeys.player1key;
 		}
 
 		thisWidget.InfoDiv
 			.empty()
 			.append($("<P>")
-			.text("Juega " + (thisWidget.CurrentPlayer == "azul" ? 
+			.text("Juega " + (thisWidget.CurrentPlayer == thisWidget._myInternalKeys.player1key ? 
 				thisWidget.options.player1.name :
 				thisWidget.options.player2.name )));
 		
@@ -168,17 +166,15 @@ var boardUtils = {
 	},
 	
 	getWidget: function (boardObj) {
-	    if (boardObj.hasClass(".ui-checkersGame")) return boardObj;
-
 		return $(boardObj).closest(".ui-checkersGame").data("customJuegodedamas");
 	},
 
 	startDrag: function(event, ui) {
-		ui.helper.css("z-index", "1000");
+		
 	},
 
 	stopDrag: function (event, ui) {
-	    ui.helper.css("z-index", "auto");
+		
     },
 
 	currentPlayerHasCaptures: function (boardObj) {
@@ -212,7 +208,7 @@ var boardUtils = {
 		var thisWidget = boardUtils.getWidget(checker);
 		var ci = boardUtils.getCheckerInfo(checker);
 		if (ci.coord == null) return [];
-		var direction = ci.type == "azul" ? 1 : -1;
+		var direction = ci.type == thisWidget._myInternalKeys.player1key ? 1 : -1;
 		var result = [];
 		//estos son los movimientos básicos posibles
 		var possibleMoves = [{rows: direction, columns: 1},{rows: direction, columns: -1}];
