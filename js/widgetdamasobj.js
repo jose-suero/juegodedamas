@@ -3,12 +3,14 @@ var boardUtils = {
 	version: "0.0.1",
 	
 	getCheckerInfo: function (checker) {
-		if (checker === undefined) { return null; };
+	    if (checker === undefined) { return null; };
+	    var whereiam = checker.data("whereiam");
+
 		return {
-			coord: new Coord(
+			coord: (whereiam) ? new Coord(
 						checker.data("whereiam").data("boardRow"), 
 						checker.data("whereiam").data("boardCol")
-					),
+					) : null,
 			type: checker.data("type"),
 			isKing: checker.data("isKing"),
 			whereiam: checker.data("whereiam")
@@ -53,13 +55,14 @@ var boardUtils = {
 	},
 		
 	checkerDropped: function(event, ui) {
-		
-		var cellAfter = $(this);
-		var cellBefore = ui.draggable.data("whereiam");
-		var checkerType = ui.draggable.data("type");
-		
+
+        var cellAfter=$(this),
+            cellBefore=ui.draggable.data("whereiam"),
+            checkerType=ui.draggable.data("type"),
+            thisWidget = boardUtils.getWidget(cellBefore),
+            canContinueCapturing = false;
+
 		boardUtils.insertCheckerIntoCell(ui.draggable, this);
-		ui.draggable.css({"z-index": "auto"});
 
 		//1. Revisar si se capturó una pieza.
 		if (Math.abs(cellAfter.data("boardRow") - cellBefore.data("boardRow")) == 2) {
@@ -71,15 +74,20 @@ var boardUtils = {
 					//captura producida. Remover esa pieza.
 					var checkerBetween = cellBetween.data("checker");
 					checkerBetween.removeData("whereiam")
-					checkerBetween.appendTo(boardUtils.getWidget(cellBetween).CapturedDiv);
+					checkerBetween.appendTo(thisWidget.CapturedDiv);
 					boardUtils.setCellOcupied(cellBetween, false);
 
 					//verificar si el jugador ganó.
-					var piezasContrarias = $.grep(boardUtils.getWidget(cellBetween).checkers, function(checker, index){
+					var piezasContrarias = $.grep(thisWidget.checkers, function(checker, index){
 						return (checker.data("whereiam") && checker.data("type") != checkerType);
 					});
 					if (piezasContrarias.length == 0) {
 						alert(checkerType + " Ganó");
+					}
+
+					//Si continúa teniendo capturas posibles con esta misma pieza se le permite seguir jugando.
+					if (boardUtils.checkerHasCaptures(ui.draggable)) {
+					    canContinueCapturing = true;
 					}
 				}
 			}
@@ -93,76 +101,42 @@ var boardUtils = {
 		}
 
 		boardUtils.setCellOcupied(cellBefore, false);
-		
-		boardUtils.getWidget(cellBefore).CurrentPlayer = ui.draggable.data("type") == "azul" ? "roja" : "azul";
-		if (boardUtils.getWidget(cellBefore).CurrentPlayer == "azul") {
-			
-		} else {
-			
+		if (!canContinueCapturing) {
+		    thisWidget.CurrentPlayer = ui.draggable.data("type") == "azul" ? "roja" : "azul";
 		}
-		
-		boardUtils.getWidget(cellBefore).InfoDiv
+
+		thisWidget.InfoDiv
 			.empty()
 			.append($("<P>")
-			.text("Juega " + (boardUtils.getWidget(cellBefore).CurrentPlayer == "azul" ? 
-				boardUtils.getWidget(cellBefore).options.player1.name :
-				boardUtils.getWidget(cellBefore).options.player2.name )));
+			.text("Juega " + (thisWidget.CurrentPlayer == "azul" ? 
+				thisWidget.options.player1.name :
+				thisWidget.options.player2.name )));
 		
 	},
 
 	canAcceptDraggable: function(draggable) {
 		var droppable = $(this);
 		var thisWidget = boardUtils.getWidget(droppable);
-		//Permitir el movimiento solamente a recuadros que si pueden utilizarse.
-		//Piezas sin coronar:
-		//1. Movimiento hacia delante en la próxima fila
 		var checker = boardUtils.getCheckerInfo(draggable);
-		//la dirección a donde puede moverse será:
-		//Si está coronada hacia cualquier dirección (direction = 0), 
-		// sino está coronada y es azul hacia abajo (direction = 1) sino hacia arriba (direction = -1)
 		if (thisWidget.CurrentPlayer != checker.type) {
+            //prevenir movimientos del jugador incorrecto.
 			return false;
 		}
-		
-		var direction = checker.isKing ? 0 : checker.type === "azul" ? 1 : -1;
 
-		if (checker.isKing) {
-			var destCoord = new Coord(droppable.data("boardRow"), droppable.data("boardCol"));
-			
-			if (Math.abs(checker.coord.row - destCoord.row) == 1 && Math.abs(checker.coord.col - destCoord.col) == 1) {
-				//Movimiento de una sola fila, comprobar que la celda esté vacía.
-				if (droppable.data("checker") === undefined) { return true; }
-				else { return false; }
-			} else if (Math.abs(checker.coord.row - destCoord.row) == 2 && Math.abs(checker.coord.col - destCoord.col) == 2) {
-				//Movimiento de dos filas y dos columnas, comprobar que la celda esté vacía 
-				//y que la del medio contenga una pieza del otro jugador
-				var cellBetween = boardUtils.getCellBetween(droppable, checker.whereiam);
-				var checkerBetween = cellBetween.data("checker");
-				if (droppable.data("checker") === undefined && checkerBetween !== undefined && checkerBetween.data("type") != checker.type) { 
-					return true;
-				} else {
-					return false;
-				}								
-			}
-		} else {
-			var destCoord = new Coord(droppable.data("boardRow"), droppable.data("boardCol"));
-			
-			if (checker.coord.row + direction == destCoord.row && Math.abs(checker.coord.col - destCoord.col) == 1) {
-				//Movimiento de una sola fila, comprobar que la celda esté vacía.
-				if (droppable.data("checker") === undefined) { return true; }
-				else { return false; }
-			} else if (checker.coord.row + (2*direction) == destCoord.row && Math.abs(checker.coord.col - destCoord.col) == 2) {
-				//Movimiento de dos filas y dos columnas, comprobar que la celda esté vacía 
-				//y que la del medio contenga una pieza del otro jugador
-				var cellBetween = boardUtils.getCellBetween(droppable, checker.whereiam);
-				var checkerBetween = cellBetween.data("checker");
-				if (droppable.data("checker") === undefined && checkerBetween !== undefined && checkerBetween.data("type") != checker.type) { 
-					return true;
-				} else {
-					return false;
-				}								
-			}		
-		}
+        //si el jugador actual tiene capturas y la pieza a arrastrar no tiene capturas posibles.
+		if (boardUtils.currentPlayerHasCaptures(draggable) && (!boardUtils.checkerHasCaptures(draggable))) {
+		    return false;
+        }
+
+		var possibleMoves = boardUtils.checkerPossibleMoves(draggable);
+	    var destCoord = new Coord(droppable.data("boardRow"), droppable.data("boardCol"));
+		var canMoveToHere = false;
+		$(possibleMoves).each(function (index, move) {
+		    if ((!canMoveToHere) && move.coord.row == destCoord.row && move.coord.col == destCoord.col) {
+		        canMoveToHere = true;
+		    }
+		});
+		return canMoveToHere;
 	},
 	
 	insertCheckerIntoCell: function(checker, cell) {
@@ -194,22 +168,106 @@ var boardUtils = {
 	},
 	
 	getWidget: function (boardObj) {
+	    if (boardObj.hasClass(".ui-checkersGame")) return boardObj;
+
 		return $(boardObj).closest(".ui-checkersGame").data("customJuegodedamas");
 	},
 
 	startDrag: function(event, ui) {
-		ui.helper.css("z-index", "99");
+		ui.helper.css("z-index", "1000");
+	},
+
+	stopDrag: function (event, ui) {
+	    ui.helper.css("z-index", "auto");
+    },
+
+	currentPlayerHasCaptures: function (boardObj) {
+	    var thisWidget = boardUtils.getWidget(boardObj);
+
+	    var hasCaptures = false;
+
+	    $(thisWidget.checkers).each(function (index, checker) {
+	        if ((!hasCaptures) && checker.data("type") == thisWidget.CurrentPlayer && boardUtils.checkerHasCaptures(checker)) {
+	            hasCaptures = true;
+	        }
+	    });
+
+		return hasCaptures;
+	},
+
+	checkerHasCaptures: function(checker) {
+		var thisWidget = boardUtils.getWidget(checker);
+		var checkerMoves = boardUtils.checkerPossibleMoves(checker);
+
+		var capturesCount = 0;
+
+		$(checkerMoves).each(function (index, move) {
+		    if (move.type == "capture") capturesCount++;
+		});
+    
+		return capturesCount > 0;
+	},
+
+	checkerPossibleMoves: function(checker) {
+		var thisWidget = boardUtils.getWidget(checker);
+		var ci = boardUtils.getCheckerInfo(checker);
+		if (ci.coord == null) return [];
+		var direction = ci.type == "azul" ? 1 : -1;
+		var result = [];
+		//estos son los movimientos básicos posibles
+		var possibleMoves = [{rows: direction, columns: 1},{rows: direction, columns: -1}];
+		//si la pieza está coronada puede moverse en la otra dirección.
+		if (ci.isKing) {
+			possibleMoves.push({rows: direction *-1, columns: 1}, {rows: direction *-1, columns: -1});
+		}
+
+		$(possibleMoves).each(function (index, move) {
+			var coord = new Coord(ci.coord.row + move.rows, ci.coord.col + move.columns);
+			if (coord.isInsideOfBoard()) {
+				//movimiento dentro de los límites del tablero.
+				var cell = thisWidget.cells[coord.row][coord.col];
+				if (cell.data("ocupied") && cell.data("checker").data("type") != ci.type) {
+				    //la celda está ocupada por una pieza contraria. Verificar si la siguiente celda no lo está.
+					var nextCoord = new Coord(coord.row + move.rows, coord.col + move.columns);
+					if (nextCoord.isInsideOfBoard()) {
+					    //la coordenada está dentro de los límites del tablero.
+					    var nextCell = thisWidget.cells[nextCoord.row][nextCoord.col];
+					    if (!nextCell.data("ocupied")) {
+					        //Movimiento de captura permitido.
+					        result.push({coord: nextCoord, type: "capture"});
+					    }
+					}
+				} else if (!cell.data("ocupied")) {
+				    //la celda de este movimiento no está ocupada.
+				    result.push({coord: coord, type: "move"});
+				}
+			}
+
+		});
+
+	    //Si tiene al menos un movimiento de captura eliminar los que no son de captura.
+		var captures = $.grep(result, function (move, index) {
+		    return move.type == "capture";
+		});
+
+		if (captures && captures.length > 0) return captures;
+		else return result;
 	}
 
 };
 //coordenada del tablero
 function Coord(row, col) {
-	this.row = row;
-	this.col = col;
+    this.version = "0.0.1";
+
+    this.row = row;
+    this.col = col;
 };
 
-Coord.version = "0.0.1";
+Coord.prototype.isInsideOfBoard = function () {
+    return (0 <= this.row && this.row <= 7)
+          && (0 <= this.col && this.col <= 7);
+};
 
 Coord.getCoordFromCell = function (cell) {
-	return new Coord(cell.data("boardRow"), cell.data("boardCol"));
+    return new Coord(cell.data("boardRow"), cell.data("boardCol"));
 };

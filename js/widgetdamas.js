@@ -29,7 +29,8 @@ $.widget("custom.juegodedamas", {
 	_init() {
 		//Para lograr referenciar a este widget dentro de funciones que le dan otro sentido a la palabra clave "this"
 		var thisWidget = this;
-		var cellsize = (this.options.size / 8) - (2*this.options.cellBorder);	
+		var cellsize = (this.options.size / 8) - (2 * this.options.cellBorder);
+		this.lastCapure = null;
 
 		//todo: modificar esta función para que se pueda reinicializar el tablero.
 		
@@ -77,7 +78,8 @@ $.widget("custom.juegodedamas", {
 					"height": parseInt(cellsize * .8) + "px"})
 				.draggable({
 					"revert": "invalid",
-					"start": boardUtils.startDrag})
+					"start": boardUtils.startDrag,
+				    "stop": boardUtils.stopDrag})
 				.data({
 					"type": (i<12)?"azul":"roja",
 					"isKing": false });
