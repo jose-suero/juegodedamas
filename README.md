@@ -46,4 +46,18 @@
 
 [2]:()
 ### Funciones y utilierías
-3. ```boardUtils```
+3. ```boardUtils```: Contiene funciones para ayuda del ciclo de vida del tablero de damas.
+   * Métodos de este objeto:
+     * `{coord, type, isKing, whereiam} getCheckerInfo(checker)`
+     * `setCellOcupied(celda, ocupied, checker)`
+     * `getBlackDivs(fRow, tRow, ocupied, widget)`
+     * `checkerDropped(event, ui)`
+     * `canAcceptDraggable(draggable)`
+     * `insertCheckerIntoCell(checker, cell)`
+     * `getCellBetween(cell1, cell2)`
+     * `getWidget(boardObj)`
+     * `startDrag(event, ui)`
+     * `stopDrag(event, ui)`
+     * `currentPlayerHasCaptures(boardObj)`
+     * `checkerHasCaptures(checker)`
+     * `checkerPossibleMoves(checker)`
