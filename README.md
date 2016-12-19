@@ -3,14 +3,14 @@
 
 [ct]:()
 ### Tabla de Contenidos
-1. [Objetos](1)
+1. [Objetos](#objetos)
 	1.  ```$.widget("custom.juegodedamas")```
 	2.  ```Coord```
-2. [Funciones y utilierías](2)
+2. [Funciones y utilierías](#funciones-y-utilierías)
 	1. ```boardUtils```
 
 [1]:()
-### Objetos #1
+### Objetos
 #### Objetos Definidos en este Widget
 1. ```$.widget("custom.juegodedamas")```: widget principal de este proyecto.
     #### Sintaxis básica
@@ -32,18 +32,18 @@
     [player1]:()
     * **player1:** Opciones para el primer jugador del tablero
       * _**name:** especifique el nombre del jugador. Por defecto "Jugador 1"_
-    * **player2:** Lo mismo que para [player1](player1) con valor para ```.name``` por defecto de "Jugador 2"
+    * **player2:** Lo mismo que para `player1` con valor para ``.name`` por defecto de "Jugador 2"
 
 2. ```Coord```: define la ublicación fila y columna de una celda del tablero.
    * Propiedades:
      * _*row:* define la fila de la celda. Este índice está basado en 0._
      * _*col:* define la columna de la celda. Este índice está basado en 0._
    * Métodos de la clase:
-     * ```getCoordFromCellcell)```: devuelve un objeto Coord en base a una celda suministrada en su parámetro ```cell```
+     * `getCoordFromCellcell)`: devuelve un objeto Coord en base a una celda suministrada en su parámetro ``cell``
    * Métodos de la instancia:
-     * ```isInsideOfBoard()```: devuelve verdadero cuando la coordenada está dentro de los límites del tablero de este widget.
+     * `isInsideOfBoard()`: devuelve verdadero cuando la coordenada está dentro de los límites del tablero de este widget.
 
-[Volver a la tabla de contenido](ct)
+**[⬆ Volver al índice](#tabla-de-contenidos)**
 
 [2]:()
 ### Funciones y utilierías
