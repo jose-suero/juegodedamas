@@ -39,7 +39,7 @@
      * _*row:* define la fila de la celda. Este índice está basado en 0._
      * _*col:* define la columna de la celda. Este índice está basado en 0._
    * Métodos de la clase:
-     * `getCoordFromCellcell)`: devuelve un objeto Coord en base a una celda suministrada en su parámetro ``cell``
+     * `getCoordFromCell(cell)`: devuelve un objeto Coord en base a una celda suministrada en su parámetro ``cell``
    * Métodos de la instancia:
      * `isInsideOfBoard()`: devuelve verdadero cuando la coordenada está dentro de los límites del tablero de este widget.
 
