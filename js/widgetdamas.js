@@ -18,6 +18,12 @@ $.widget("custom.juegodedamas", {
 	
 	//Constructor
 	_create: function () {
+	    this.element.css({
+	        //"overflow": "auto",
+	        "width": this.options.size + "px",
+	        "height": this.options.size + "px",
+	        "border": "0px solid black"
+	    });
 		this.element.addClass("ui-checkersGame");
 		this.element.append(this.Player1div = $("<DIV>"));
 		this.element.append(this.MainDiv = $("<DIV>")
@@ -33,8 +39,13 @@ $.widget("custom.juegodedamas", {
 		this.element.append(this.ObjsDiv = $("<DIV>"));
 		this.element.append(this.CapturedDiv = $("<DIV>"));
 		
-		this.Player1div.append($("<P>").text(this.options.player1.name), this.Player1divcaptures = $("<DIV>"));
-		this.Player2div.append($("<P>").text(this.options.player2.name), this.Player2divcaptures = $("<DIV>"));
+		this.Player1div.append($("<P>").css({ "text-align": "center" }).text(this.options.player1.name));
+		this.Player2div.append($("<P>").css({ "text-align": "center" }).text(this.options.player2.name));
+
+		this.InfoDiv.append($("<SPAN>").text("Juega: "), $("<IMG>").prop({ "src": "img/blue.svg" }).css({
+		    "width":  "12px",
+		    "height": "12px"
+		}));
 	},
 	
 	//Inicializador
@@ -106,9 +117,9 @@ $.widget("custom.juegodedamas", {
 		}
 		
 		thisWidget.CurrentPlayer = thisWidget._myInternalKeys.player1key;		
-		thisWidget.InfoDiv.empty().append($("<P>").text("Juega " + (thisWidget.CurrentPlayer == thisWidget._myInternalKeys.player1key ? 
-				thisWidget.options.player1.name :
-				thisWidget.options.player2.name)));
+		//$("#info_message", thisWidget.InfoDiv).text("Juega " + (thisWidget.CurrentPlayer == thisWidget._myInternalKeys.player1key ? 
+		//		thisWidget.options.player1.name :
+		//		thisWidget.options.player2.name));
 	},
 	
 });

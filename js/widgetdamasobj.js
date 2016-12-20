@@ -71,8 +71,11 @@ var boardUtils = {
 				if (checkerBetweenData && checkerBetweenData.type != checkerType) {
 					//captura producida. Remover esa pieza.
 					var checkerBetween = cellBetween.data("checker");
-					checkerBetween.removeData("whereiam")
-					checkerBetween.appendTo(ci.type == thisWidget._myInternalKeys.player1key ? thisWidget.Player1divcaptures : thisWidget.Player2divcaptures);
+					checkerBetween.removeData("whereiam");
+					checkerBetween.toggle("explode");
+					checkerBetween.remove();
+					//checkerBetween.appendTo(ci.type == thisWidget._myInternalKeys.player1key ? thisWidget.Player1divcaptures : thisWidget.Player2divcaptures);
+					
 					boardUtils.setCellOcupied(cellBetween, false);
 
 					//verificar si el jugador ganó.
@@ -103,12 +106,13 @@ var boardUtils = {
 		    thisWidget.CurrentPlayer = ci.type == thisWidget._myInternalKeys.player1key ? thisWidget._myInternalKeys.player2key : thisWidget._myInternalKeys.player1key;
 		}
 
-		thisWidget.InfoDiv
-			.empty()
-			.append($("<P>")
-			.text("Juega " + (thisWidget.CurrentPlayer == thisWidget._myInternalKeys.player1key ? 
-				thisWidget.options.player1.name :
-				thisWidget.options.player2.name )));
+		//thisWidget.InfoDiv
+		//	.empty()
+		//	.append($("<P>")
+		//	.text("Juega " + (thisWidget.CurrentPlayer == thisWidget._myInternalKeys.player1key ? 
+		//		thisWidget.options.player1.name :
+	    //		thisWidget.options.player2.name )));
+		$("IMG", thisWidget.InfoDiv).prop({ "src": "img/" + ((thisWidget.CurrentPlayer == thisWidget._myInternalKeys.player1key) ? "blue" : "red") + ".svg" })
 		
 	},
 
@@ -169,8 +173,19 @@ var boardUtils = {
 		return $(boardObj).closest(".ui-checkersGame").data("customJuegodedamas");
 	},
 
-	startDrag: function(event, ui) {
-		
+	startDrag: function (event, ui) {
+	    //checks if player has a capture.
+	    if (boardUtils.currentPlayerHasCaptures(ui.helper)
+            && (!boardUtils.checkerHasCaptures(ui.helper))) {
+	        //bounce all capture checkersvar 
+	        thisWidget = boardUtils.getWidget(ui.helper);
+
+	        $(thisWidget.checkers).each(function (index, checker) {
+	            if (checker.data("type") == thisWidget.CurrentPlayer && boardUtils.checkerHasCaptures(checker)) {
+	                checker.effect("shake", { "direction": "up", "distance": 3, "times": 4 });
+	            }
+	        });
+	    }
 	},
 
 	stopDrag: function (event, ui) {
