@@ -1,5 +1,5 @@
 $.widget("custom.juegodedamas", {
-	version: "0.0.1",
+	version: "1.0.0",
 	//opciones por defecto.	
 	options: {
 		"player1": { name: "Jugador 1" },
@@ -8,7 +8,7 @@ $.widget("custom.juegodedamas", {
 		"droppableClass": false,
 		"cellBorder": 1
 	},
-	
+	//Para mejor manejo de constantes dentro de todo este código.
 	_myInternalKeys: {
 		"darkCells" : "dark",
 		"lightCells" : "light",
@@ -19,24 +19,21 @@ $.widget("custom.juegodedamas", {
 	//Constructor
 	_create: function () {
 	    this.element.css({
-	        //"overflow": "auto",
 	        "width": this.options.size + "px",
 	        "height": this.options.size + "px",
 	        "border": "0px solid black"
 	    });
+        //añadir un nombre de clase para facilitar la posterior búsqueda de este objeto.
 		this.element.addClass("ui-checkersGame");
 		this.element.append(this.Player1div = $("<DIV>"));
 		this.element.append(this.MainDiv = $("<DIV>")
-			//.prop({"id": "boardTable"})
 			.css({
-				//"overflow": "auto",
 				"width": this.options.size + "px",
 				"height": this.options.size + "px",
 				"border": "1px solid black"})
 		);
 		this.element.append(this.Player2div = $("<DIV>"));
 		this.element.append(this.InfoDiv = $("<DIV>"));
-		this.element.append(this.ObjsDiv = $("<DIV>"));
 		this.element.append(this.CapturedDiv = $("<DIV>"));
 		
 		this.Player1div.append($("<P>").css({ "text-align": "center" }).text(this.options.player1.name));
@@ -102,13 +99,11 @@ $.widget("custom.juegodedamas", {
 				.draggable({
 					"revert": "invalid",
 					"start": boardUtils.startDrag,
-				    "stop": boardUtils.stopDrag,
 					"zIndex": 100 })
 				.data({
 					"type": (i<12)? thisWidget._myInternalKeys.player1key : thisWidget._myInternalKeys.player2key,
 					"isKing": false });
 			this.checkers.push(checker);
-			thisWidget.ObjsDiv.append(checker);
 			
 			var desde = (checker.data("type") == thisWidget._myInternalKeys.player1key) ? 0 : 5,
 			      cell = boardUtils.getBlackDivs(desde,desde+3,false,thisWidget)[0];
@@ -116,10 +111,7 @@ $.widget("custom.juegodedamas", {
 			boardUtils.insertCheckerIntoCell(checker, cell);
 		}
 		
-		thisWidget.CurrentPlayer = thisWidget._myInternalKeys.player1key;		
-		//$("#info_message", thisWidget.InfoDiv).text("Juega " + (thisWidget.CurrentPlayer == thisWidget._myInternalKeys.player1key ? 
-		//		thisWidget.options.player1.name :
-		//		thisWidget.options.player2.name));
+		thisWidget.CurrentPlayer = thisWidget._myInternalKeys.player1key;	
 	},
 	
 });

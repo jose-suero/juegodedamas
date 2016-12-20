@@ -1,28 +1,23 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
 	<meta charset="UTF-8" />
-	<title>Juego de Damas - Evaluaci�n Final - Jose Suero</title>
+	<title>Juego de Damas - Evaluaci�n Final - Jose Suero</title>
 	<link href="js/jquery-ui.css" rel="stylesheet">
 	<script type="text/javascript" src="js/external/jquery/jquery.js" ></script>
 	<script type="text/javascript" src="js/jquery-ui.js" ></script>
+    <!-- Implementación del tablero de damas. -->
 	<script type="text/javascript" src="js/widgetdamasobj.js" ></script>
 	<script type="text/javascript" src="js/widgetdamas.js" ></script>
 	<script type="text/javascript">
 		$(document).ready(
 			function () {
 				$("#tablero").juegodedamas({
-					size: 400,
-					droppableClass: "cust-droppable"
+					size: 560
 				});
 			}
 		);
 	</script>
-	<style type="text/css">
-		.cust-droppable {
-			border: 1px solid yellow;
-		}
-	</style>
 </head>
 <body>
 	<div id="tablero"></div>
